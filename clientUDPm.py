@@ -1,30 +1,21 @@
-import numbers
 from socket import *
 import numpy as np
 import time
-
-
-#variáveis globais
-
-serverName = "localhost"
-serverPort = 12000
-fileSize   = 15*1024 #arquivo de 10kB
-M = 1024 #tamanho do pacote
-buffer = [] #buffer com janela deslizante
-N = 10 # tamanho do buffer
-clientSocket = socket(AF_INET,SOCK_DGRAM)
-
 
 # funções
 
 def getResposta():
     msgResposta = clientSocket.recvfrom(M)
-    print ("Client response: %s" % msgResposta[0])
+    print ("Resposta do Server: %s" % msgResposta[0])
     return msgResposta[0]
 
 def getProxBit(packet):
     packetSplit = packet.split(b',')
     return int(packetSplit[0].decode())
+
+def getWindowSize(packet):
+    packetSplit = packet.split(b',')
+    return int(packetSplit[2].decode())
     
 def createPacket(numSeq, msg):
     packet  = ''
@@ -43,22 +34,40 @@ def createSegment(fileSize, packetSize):
         segment[i] = [False, packetSize*i]
     return segment
 
-# fluxo 
+
+#variáveis globais
+
+serverName = "localhost"
+serverPort = 12000
+fileSize   = 15*1024*1024 #arquivo de 15kB
+M = 1024 #tamanho do pacote
+buffer = [] #buffer com janela deslizante
+N = 10 # tamanho do buffer
+clientSocket = socket(AF_INET,SOCK_DGRAM)
 numSeqAtual = 0
 buffer = [ 0 , N-1] # inicio , fim
 segment = createSegment(fileSize, M)
-
+windowSizeRcvr = N 
 clientSocket = socket(AF_INET,SOCK_DGRAM)
 
+
 while numSeqAtual <= len(segment):    
-    for i in range(buffer[0], buffer[1]+1):
+
+    maxEnvio = N
+    if( (buffer[1] - buffer[0] + 1) > windowSizeRcvr):
+        maxEnvio = buffer[0] + windowSizeRcvr + 1
+    else:
+        maxEnvio = buffer[1] + 1
+
+    for i in range(buffer[0], maxEnvio):
         packetToSend = createPacket(numSeqAtual, segment[i][1])
         clientSocket.sendto(packetToSend.encode(),(serverName,serverPort))
-        time.sleep(0.2)
         numSeqAtual += 1
 
     resposta = getResposta()
     proxBit = getProxBit(resposta) 
+    #dados da resposta
+    windowSizeRcvr = getWindowSize(resposta)
     primeiroBit = buffer[0]*M
     acked = int((proxBit - primeiroBit)/M) # quantos pacotes foram ACKed
     ultimoACK = (proxBit / M) # 2048, ACK
@@ -68,7 +77,6 @@ while numSeqAtual <= len(segment):
         segment[buffer[0]][0] = True
         if(buffer[0] < len(segment) - 1 ):
             buffer[0] += 1
-  
         
     #desliza o lado direito da janela    
     if(buffer[1] + acked > len(segment) - 1):
@@ -79,7 +87,7 @@ while numSeqAtual <= len(segment):
     ultimo = segment[len(segment) - 1]
     if(bool(ultimo[0]) == True):
         clientSocket.close()
-        print("Fim da operacao")
+        print ('Fechando socket do client...')
         break
     
     

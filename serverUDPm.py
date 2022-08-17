@@ -31,11 +31,13 @@ serverSocket.bind(('', serverPort))
 numSeqAtual = 0
 timeoutCount = 0
 start = time.time()
+primeiraExecucao = True
 while True:
-    proximoBit = 0
-
     try:
-        print ('Pronto para receber')
+        if(primeiraExecucao):
+            print ('Pronto para receber')
+            primeiraExecucao = False
+        proximoBit = 0
         message, clientAddress = serverSocket.recvfrom(M)
         result = message.decode()
         #print('Mensagem client: '+ result)
@@ -66,6 +68,6 @@ while True:
 print ('Fechando socket do server...')
 serverSocket.close()
 end = time.time()
-print(end - start)
+print('Tempo de execucao: ' + str(end - start))
 
 

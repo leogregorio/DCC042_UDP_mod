@@ -39,7 +39,7 @@ def createSegment(fileSize, packetSize):
 
 serverName = "localhost"
 serverPort = 12000
-fileSize   = 15*1024*1024 #arquivo de 15kB
+fileSize   = 15*1024*1024 #arquivo de 15MB
 M = 1024 #tamanho do pacote
 buffer = [] #buffer com janela deslizante
 N = 10 # tamanho do buffer

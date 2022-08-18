@@ -1,9 +1,5 @@
 from socket import *
 import time 
-serverPort = 12000
-M = 1024 #tamanho do pacote
-buffer = [] #buffer com janela deslizante
-N = 10 # tamanho do buffer
 
 
 # funções
@@ -26,12 +22,18 @@ def createPacket(numSeq, msg, bufferFill):
     packet += str(bufferFill)
     return packet
 
+#variáveis globais
+
 serverSocket = socket(AF_INET, SOCK_DGRAM)
+serverPort = 12000
 serverSocket.bind(('', serverPort))
+M = 1024 #tamanho do pacote
+buffer = [] #buffer com janela deslizante
+N = 10 # tamanho do buffer
 numSeqAtual = 0
 timeoutCount = 0
-start = time.time()
 primeiraExecucao = True
+
 while True:
     try:
         if(primeiraExecucao):
@@ -54,6 +56,7 @@ while True:
                 proximoBit = (buffer[len(buffer)-1] + 1)*M   
                 response = createPacket(proximoBit,'ACK', N - len(buffer))         
         
+
         if(len(buffer) == N ):
             buffer.clear()
             response = createPacket(proximoBit,'ACK', N - len(buffer))
@@ -67,7 +70,6 @@ while True:
     serverSocket.settimeout(10)
 print ('Fechando socket do server...')
 serverSocket.close()
-end = time.time()
-print('Tempo de execucao: ' + str(end - start))
+
 
 
